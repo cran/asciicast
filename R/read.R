@@ -11,7 +11,7 @@
 #' @export
 #' @importFrom jsonlite fromJSON
 #' @family asciicast functions
-#' @examplesIf interactive() && curl::has_internet()
+#' @examplesIf interactive()
 #' c1 <- read_cast("https://asciinema.org/a/uHQwIVpiZvu0Ioio8KYx6Uwlj.cast?dl=1")
 #' play(c1)
 #'
@@ -36,7 +36,7 @@ read_cast <- function(json) {
     lines <- readLines(json)
   }
 
-  config <- rethrow(fromJSON(lines[1]), new_parse_error(json))
+  config <- chain_error(fromJSON(lines[1]), new_parse_error(json))
   if (!identical(as.integer(config$version), 2L)) {
     throw(new_parse_error(json))
   }
@@ -48,13 +48,13 @@ read_cast <- function(json) {
     data = character(nrec))
 
   for (i in seq_along(lines)[-1]) {
-    l <- rethrow(
+    l <- chain_error(
       fromJSON(lines[i], simplifyVector = FALSE),
       new_parse_error(json, line = i))
     if (!is.numeric(l[[1]]) || !is.character(l[[2]]) || !is.character(l[[3]])) {
       throw(new_parse_error(json, line = i))
     }
-    output[i, ] <- l
+    output[i - 1L, ] <- l
   }
 
   new_cast(config, output)

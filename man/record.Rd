@@ -14,19 +14,25 @@ record(
   timestamp = NULL,
   env = NULL,
   idle_time_limit = NULL,
-  allow_errors = TRUE,
   timeout = NULL,
   start_wait = NULL,
   end_wait = NULL,
   record_env = NULL,
   startup = NULL,
   echo = TRUE,
-  process = NULL
+  speed = NULL,
+  process = NULL,
+  interactive = TRUE,
+  locales = get_locales(),
+  options = asciicast_options(),
+  incomplete_error = NULL
 )
 }
 \arguments{
 \item{script}{Path of an R script to record. It can also be a readable
-R connection or URL, as it is passed to \code{\link[base:readLines]{base::readLines()}}.}
+R connection or URL, as it is passed to \code{\link[base:readLines]{base::readLines()}}. It can also
+be a language object, which is deparsed, or a character vector with
+the source code itself.}
 
 \item{typing_speed}{Average typing speed, per keypress, in seconds.}
 
@@ -50,10 +56,6 @@ Defaults to \code{list(TERM = "xterm-256color", SHELL = "/bin/zsh")}.}
 \item{idle_time_limit}{Time limit for the cast not printing anything,
 in seconds. By default there is no limit.}
 
-\item{allow_errors}{Whether to cast errors properly. If this is set to
-\code{TRUE}, then asciicast overwrites the \code{"error"} option. Only change
-this if you know what you are doing.}
-
 \item{timeout}{Idle timeout, in seconds If the R subprocess running
 the recording does not answer within this limit, it is killed and the
 recording stops. Update this for slow running code, that produces no
@@ -71,10 +73,32 @@ starting the recording.}
 \item{echo}{Whether to echo the input to the terminal. If \code{FALSE}, then
 only the output is shown.}
 
+\item{speed}{Rescale the speed of the recorded cast with this factor.
+The delay of the first frame is kept constant.}
+
 \item{process}{A processx subprocess to run the cast in. By default a
 new subprocess is started. You can reuse a process by calling
 \code{\link[=asciicast_start_process]{asciicast_start_process()}} first, and supplying the returned process
 here.}
+
+\item{interactive}{Whether to run R in interactive mode. This argument
+is ignored if \code{process} is specified. If \code{process} is \code{NULL} then
+it is passed to \code{\link[=asciicast_start_process]{asciicast_start_process()}}.}
+
+\item{locales}{Locales to set in the asciicast subprocess. Defaults
+to the current locales in the main R process. Specify a named character
+vector here to override some of the defaults. See also \code{\link[=get_locales]{get_locales()}}.}
+
+\item{options}{Options to set in the subprocess, a named list.
+They are deparsed to code, and then the code setting them is
+executed in the subprocess. See \code{\link[=asciicast_options]{asciicast_options()}} for the
+defaults. Supply a named list here to override the defaults or set
+additionsl ones. Passing large and/or complicated options here might
+not work, or might be slow.}
+
+\item{incomplete_error}{Whether to error on incomplete expressions.
+You might need to set this to \code{FALSE} for R code that does keyboard
+input, e.g. in \code{browser()}. The default is \code{TRUE}.}
 }
 \value{
 An \code{asciicast} object, write this to
@@ -84,7 +108,7 @@ file with \code{\link[=write_json]{write_json()}}.
 Record an asciinema screencast
 }
 \examples{
-\dontshow{if (asciicast:::is_recording_supported() && interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 script <- system.file("examples", "hello.R", package = "asciicast")
 cast <- record(script)
 play(cast)

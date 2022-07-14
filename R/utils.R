@@ -5,16 +5,8 @@ not_null <- function(x) {
   x[! vapply(x, is.null, logical(1))]
 }
 
-is_empty_line <- function(x) {
-  grepl("^\\s*$", x)
-}
-
 encode_str <- function(x) {
   vapply(x, jsonlite::toJSON, character(1), auto_unbox = TRUE)
-}
-
-str_trim <- function(x) {
-  sub("^\\s+", "", sub("\\s+$", "", x))
 }
 
 mkdirp <- function(x) {
@@ -44,37 +36,54 @@ map_dbl <- function(.x, .f, ...) {
   vapply(.x, .f, FUN.VALUE = double(1), ...)
 }
 
-messagex <- function (..., domain = NULL, appendLF = TRUE) {
-  args <- list(...)
-  msg  <- .makeMessage(..., domain = domain, appendLF = appendLF)
-  call <- sys.call()
-  cond <- simpleMessage(msg, call)
-
-  defaultHandler <- function(c) {
-    output <- if (is_interactive()) stdout() else stderr()
-    cat(conditionMessage(c), file = output, sep = "")
-  }
-
-  withRestarts({
-    signalCondition(cond)
-    defaultHandler(cond)
-  }, muffleMessage = function() NULL)
-  invisible()
+is_windows <- function() {
+  .Platform$OS.type == "windows"
 }
 
-is_interactive <- function() {
-  opt <- getOption("rlib_interactive")
-  if (isTRUE(opt)) {
-    TRUE
-  } else if (identical(opt, FALSE)) {
-    FALSE
-  } else if (tolower(getOption("knitr.in.progress", "false")) == "true") {
-    FALSE
-  } else if (tolower(getOption("rstudio.notebook.executing", "false")) == "true") {
-    FALSE
-  } else if (identical(Sys.getenv("TESTTHAT"), "true")) {
+is_macos <- function() {
+  Sys.info()[["sysname"]] == "Darwin"
+}
+
+is_linux <- function() {
+  Sys.info()[["sysname"]] == "Linux"
+}
+
+dir_exists <- function(path) {
+  utils::file_test("-d", path)
+}
+
+try_silently <- function(expr) {
+  try(expr, silent = TRUE)
+}
+
+#' @importFrom cli cli_process_start cli_process_done
+
+with_cli_process <- function(msg, expr, ...) {
+  proc <- cli_process_start(msg, ...)
+  ret <- withVisible(expr)
+  cli_process_done(proc)
+  if (ret$visible) ret$value else invisible(ret$value)
+}
+
+file_ext <- function(x) {
+  pos <- regexpr("(\\.[[:alnum:]]+)$", x)
+  ifelse(pos > -1L, substring(x, pos + 1L), "")
+}
+
+na_omit <- function(x) {
+  x[!is.na(x)]
+}
+
+if (getRversion() < "3.6.0") {
+  str2lang <- function(x) {
+    parse(text = x, keep.source = FALSE)[[1]]
+  }
+}
+
+is_rcmd_check <- function() {
+  if (identical(Sys.getenv("NOT_CRAN"), "true")) {
     FALSE
   } else {
-    interactive()
+    Sys.getenv("_R_CHECK_PACKAGE_NAME_", "") != ""
   }
 }

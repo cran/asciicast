@@ -8,11 +8,10 @@ init_knitr_engine(
   echo = FALSE,
   same_process = TRUE,
   timeout = 10,
-  allow_errors = TRUE,
   startup = NULL,
   record_env = NULL,
   echo_input = TRUE,
-  options = asciicast_knitr_options()
+  options = list()
 )
 }
 \arguments{
@@ -24,12 +23,7 @@ again.}
 
 \item{timeout}{Idle timeout, in seconds If the R subprocess running
 the recording does not answer within this limit, it is killed and the
-recording stops. Update this for slow running code, that produces no
-output as it runs.}
-
-\item{allow_errors}{Whether to cast errors properly. If this is set to
-\code{TRUE}, then asciicast overwrites the \code{"error"} option. Only change
-this if you know what you are doing.}
+recording stops.}
 
 \item{startup}{Quoted language object to run in the subprocess before
 starting the recording.}
@@ -38,26 +32,40 @@ starting the recording.}
 
 \item{echo_input}{Whether to echo the input in the asciicast recording.}
 
-\item{options}{R options to set (via \code{\link[base:options]{base::options()}}, in the background
-R process that performs the recording. See \code{asciicast_knitr_options()}
-for the defaults.}
+\item{options}{R options to set (via the \code{R.options} chunk option of
+knitr), in the current R process that performs the recording.
+See \code{\link[=asciicast_knitr_options]{asciicast_knitr_options()}} for the defaults.}
 }
 \description{
-Call this function in your Rmd file, to enable creating asciinema
+Call this function in your Rmd file to enable creating asciinema
 casts from code chunks.
+}
+\details{
+\subsection{Limitations}{
+\itemize{
+\item \code{purl()} or setting the \code{purl = TRUE} chunk option, does not work
+properly, in that knitr thinks that asciicast chunks are not R code,
+so they will appear as comments. If you know how to fix this, please
+contact us.
+}
+}
 }
 \section{Examples}{
 
 Call this function from an Rmd chunk and then you can use the asciicast
-knitr engine:\preformatted{```\{r echo = FALSE, results = "hide"\}
+knitr engine:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{```\{r setup, include = FALSE\}
 asciicast::init_knitr_engine()
 ```
-}\preformatted{```\{asciicast, cache = TRUE\}`
+}\if{html}{\out{</div>}}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{```\{asciicast, cache = TRUE\}`
 #' Rows: 10
 # This is an asciicast example
 loadedNamespaces()
 ```
-}
+}\if{html}{\out{</div>}}
 }
 
 \seealso{
