@@ -1,6 +1,6 @@
 Package: asciicast
 Title: Create 'Ascii' Screen Casts from R Scripts
-Version: 2.0.0
+Version: 2.1.0
 Authors@R: c(
     person(given = "Gábor",
            family = "Csárdi",
@@ -27,14 +27,15 @@ Imports: cli, curl, jsonlite, magick (>= 2.2.9002), processx (>=
 LinkingTo: processx
 Suggests: callr, covr, cpp11, decor, htmlwidgets, knitr, mockery,
         rmarkdown, rstudioapi, testthat (>= 3.0.0), withr
-Config/Needs/website: r-lib/downlit
+Config/Needs/website: r-lib/downlit, tidyverse/tidytemplate
 Encoding: UTF-8
 RoxygenNote: 7.2.0.9000
-URL: https://github.com/r-lib/asciicast
+URL: https://github.com/r-lib/asciicast,
+        https://r-lib.github.io/asciicast/
 BugReports: https://github.com/r-lib/asciicast/issues
 Config/testthat/edition: 3
 NeedsCompilation: yes
-Packaged: 2022-07-14 07:46:13 UTC; gaborcsardi
+Packaged: 2022-08-07 20:43:22 UTC; gaborcsardi
 Author: Gábor Csárdi [aut, cre],
   Romain Francois [aut],
   Mario Nebl [aut] (https://github.com/marionebl/svg-term author),
@@ -42,4 +43,4 @@ Author: Gábor Csárdi [aut, cre],
     author)
 Maintainer: Gábor Csárdi <csardi.gabor@gmail.com>
 Repository: CRAN
-Date/Publication: 2022-07-14 08:10:02 UTC
+Date/Publication: 2022-08-07 21:00:02 UTC
