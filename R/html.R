@@ -9,66 +9,54 @@
 #'   often just the prompt, and sometimes it is not worth showing.
 #' @param prefix Prefix to add to the beginning to every line. E.g.
 #'   `#> ` is usually added to knitr output.
-#' @param full_html Whether to output a full HTML file. Mainly for testing
-#'   purposes.
 #' @param theme A theme name to use, or a a named list to override the
 #'   default theme (see [default_theme()]).
+#' @param details Whether to put the output in a `<details>` tag.
+#' @param summary Summary of the `<details>` tag, ignored if `details` is
+#'   FALSE.
 #'
 #' @export
 
 write_html <- function(cast, path, at = "end", omit_last_line = NULL,
-                       prefix = "", full_html = FALSE, theme = NULL) {
+                       prefix = "", theme = NULL, details = FALSE,
+                       summary = "See output") {
 
   omit_last_line <- as.logical(get_param("omit_last_line", TRUE))
   if (omit_last_line) cast <- remove_last_line(cast)
 
-  if (identical(at, "end")) at <- utils::tail(cast$output$time, 1)
-
-  frames <- load_frames(
-    cast,
-    height = cast$config$height,
-    width = cast$config$width
-  )
-  ts <- vapply(frames$frames, "[[", double(1), 1)
-  which_frame <- utils::tail(which(ts <= at), 1)
-  lines <- frames$frames[[which_frame]][[2]]$screen$lines
-
-  lines <- c(
-    "<div class=\"asciicast\"><pre>",
-    vapply(lines, format_html_line, character(1), prefix = prefix),
-    "</pre></div>"
-  )
-
-  if (full_html) {
-    theme <- interpret_theme(theme)
-    theme <- to_html_theme(theme)
-    writeLines(c(
-      "<html>",
-      "<head>",
-      "<style type=\"text/css\">",
-      theme,
-      "</style>",
-      "</head>",
-      "<body>"
-    ), path)
-  } else {
-    writeLines(character(), path)
+  cast$output <- cast$output[cast$output$type == "o", ]
+  if (!identical(at, "end")) {
+    cast$output <- cast$output[cast$output$time <= at, ]
   }
 
-  cat(lines, file = path, sep = "\n", append = TRUE)
+  height <- cast$config$height
+  width <- cast$config$width
+  screen <- cli::vt_output(cast$output$data, width = width , height = height)
 
-  if (full_html) {
-    cat(c(
-      "</body>",
-      "</html>"
-    ), file = path, sep = "\n", append = TRUE)
-  }
+  theme <- to_html_theme(interpret_theme(theme))
+
+  lines <- lapply(seq_len(max(screen$lineno)), function(l) {
+    format_html_line(screen[screen$lineno == l, ], prefix = prefix, theme = theme)
+  })
+
+  alllines <- c(
+    if (details) c("<details><summary>", summary, "</summary>"),
+    paste0("<div class=\"asciicast\" style=\"", theme[["div.asciicast"]], "\"><pre>"),
+    unlist(lines),
+    "</pre></div>",
+    if (details) "</details>"
+  )
+
+  cat(alllines, file = path, sep = "\n")
 
   invisible()
 }
 
 interpret_theme <- function(theme) {
-  theme <- theme %||% getOption("asciicast_theme")
+  theme <- theme %||%
+    getOption("asciicast_theme") %||%
+    if (Sys.getenv("IN_PKGDOWN") == "true") "pkgdown"
+
   if (is.character(theme) && length(theme) == 1) {
     if (!theme %in% names(themes)) {
       throw(new_error("Unknown theme: ", theme))
@@ -80,14 +68,14 @@ interpret_theme <- function(theme) {
 
 col_to_css <- function(x) {
   sprintf(
-    "{ color: %s }",
+    "color: %s",
     grDevices::rgb(x[[1]] / 255, x[[2]] / 255, x[[3]] / 255)
   )
 }
 
 bg_to_css <- function(x) {
   sprintf(
-    "{ background-color: %s }",
+    "background-color: %s",
     grDevices::rgb(x[[1]] / 255, x[[2]] / 255, x[[3]] / 255)
   )
 }
@@ -98,6 +86,9 @@ col_to_rgb <- function(x) {
 
 to_html_theme <- function(theme) {
   cli_theme <- cli::ansi_html_style()
+  cli_theme[] <- sub("^\\{[ ]+", "", cli_theme)
+  cli_theme[] <- sub("[ ]+\\}$", "", cli_theme)
+
   cli_theme[[".ansi-color-0"]] <- col_to_css(theme$black)
   cli_theme[[".ansi-color-1"]] <- col_to_css(theme$red)
   cli_theme[[".ansi-color-2"]] <- col_to_css(theme$green)
@@ -133,18 +124,24 @@ to_html_theme <- function(theme) {
   cli_theme[[".ansi-bg-color-15"]] <- bg_to_css(theme$light_white)
 
   cli_theme[["div.asciicast"]] <- sprintf(
-    "{ color: %s, font-family: %s, line-height: %f }",
+    "color: %s;font-family: %s;line-height: %f",
     col_to_rgb(theme$text),
     theme$font_family,
     theme$line_height
   )
 
-  format(cli_theme)
+  cli_theme
 }
 
-format_html_line <- function(line, prefix = "") {
+format_html_line <- function(
+  segments,
+  theme = to_html_theme(interpret_theme(NULL)),
+  prefix = "") {
+
   out <- paste(unlist(
-    lapply(line, format_html_piece)
+    lapply(seq_len(nrow(segments)), function(i) {
+      format_html_piece(segments[i, ], theme = theme)
+    })
   ), collapse = "")
 
   if (nchar(prefix) != 0) {
@@ -154,44 +151,43 @@ format_html_line <- function(line, prefix = "") {
   out
 }
 
-format_html_piece <- function(pc) {
-  txt <- escape_html(pc[[1]])
-  markup <- vapply(
-    seq_along(pc[[2]]),
-    function(i) create_markup(names(pc[[2]])[i], pc[[2]][[i]]),
-    character(1)
+format_html_piece <- function(pc, theme) {
+  style <- paste0("",
+    if (pc$bold) theme[[".ansi-bold"]],
+    if (pc$italic) theme[[".ansi-italic"]],
+    if (pc$underline) theme[[".ansi-underline"]],
+    if (!is.na(pc$color)) create_markup_fg(pc$color, theme),
+    if (!is.na(pc$background_color)) create_markup_bg(pc$background_color, theme)
   )
-
   paste0(
-    if (length(markup)) {
-      paste0("<span class=\"", paste(markup, collapse = " "), "\">")
-    },
-    txt,
-    if (length(markup)) {
-      "</span>"
-    }
+    if (nchar(style)) paste0("<span style=\"", style, "\">"),
+    if (!is.na(pc$link)) paste0("<a href=\"", escape_html(pc$link), "\">"),
+    escape_html(pc$segment),
+    if (!is.na(pc$link)) "</a>",
+    if (nchar(style)) "</span>"
   )
 }
 
-create_markup <- function(nm, vl) {
-  switch(
-    nm,
-    "fg" = paste0("ansi-color-", vl),
-    "bg" = paste0("ansi-bg-color-", vl),
-    "bold" = if (vl) "ansi-bold" else "",
-    "italic" = if (vl) "ansi-italic" else "",
-    "underline" = if (vl) "ansi-underline" else "",
-    # blink?
-    # hide/hidden?
-    # crossedout/strikethrough?
-    # links?
-    ""
-  )
+create_markup_fg <- function(col, theme) {
+  if (substr(col, 1, 1) != "#") {
+    paste0(theme[[paste0(".ansi-color-", col)]], ";")
+  } else {
+    paste0("color:", col, ";")
+  }
+}
+
+create_markup_bg <- function(col, theme) {
+  if (substr(col, 1, 1) != "#") {
+    paste0(theme[[paste0(".ansi-bg-color-", col)]], ";")
+  } else {
+    paste0("color:", col, ";")
+  }
 }
 
 escape_html <- function(x) {
   x <- gsub("&", "&amp;", x, fixed = TRUE)
   x <- gsub("<", "&lt;", x, fixed = TRUE)
   x <- gsub(">", "&gt;", x, fixed = TRUE)
+  x <- gsub("%", "&#37;", x, fixed = TRUE)
   x
 }

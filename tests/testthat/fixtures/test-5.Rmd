@@ -5,7 +5,9 @@ always_allow_html: true
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  cache = FALSE
+  cache = FALSE,
+  asciicast_theme = list(),
+  asciicast_include_style = FALSE
 )
 asciicast::init_knitr_engine()
 ```
@@ -27,7 +29,6 @@ Config in header is OK.
 
 ```{asciicast 3-header}
 #' cols: 40
-options(width = 40)
 1:100
 ```
 
@@ -41,10 +42,4 @@ options(width = 40)
 
 ```{asciicast 4-no-include, include = FALSE}
 "Now you don't see me"
-```
-
-`fig.process` option.
-
-```{asciicast 5-process, fig.process = function(x) { file.create(paste0(x, "-processed")); x }}
-cli::cli_text("processed!")
 ```

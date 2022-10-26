@@ -91,7 +91,12 @@ wait_for <- function(px, type = "", value = "", timeout = 1000, linum = "???") {
   while (TRUE) {
     ret <- processx::poll(list(con), timeout)
     if (ret[[1]] == "timeout") {
-      throw(new_error("asciicast timeout after line ", linum))
+      err <- new_error(
+        "asciicast timeout after line ", linum,
+        "\noutput:\n", paste(utils::tail(output), collapse = "\n"),
+        "\nstdout:\n", px$read_output()
+      )
+      throw(err)
     }
     line <- processx::conn_read_lines(con, 1)
     if (length(line)) {
@@ -293,6 +298,7 @@ asciicast_start_process_internal <- function(sock_name, env, interactive) {
 setup_env <- function(extra = NULL) {
   env <- Sys.getenv()
   env["ASCIICAST"] <- "true"
+  env["R_CLI_HYPERLINK_MODE"] <- "posix"
   if (is_windows()) {
     env["PATH"] <- paste0(R.home("bin"), ";", Sys.getenv("PATH")) # nocovif !is_windows()
   }

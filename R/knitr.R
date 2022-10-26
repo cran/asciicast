@@ -1,37 +1,4 @@
 
-#' Default R options to set in the background R process for knits
-#'
-#' You can pass these options to [init_knitr_engine()], after possibly
-#' overriding some of them.
-#'
-#' @return List of options.
-#'
-#' @export
-#' @family asciicast in Rmd
-#' @examples
-#' asciicast_knitr_options()
-
-asciicast_knitr_options <- function() {
-  list(
-    asciicast_knitr_output = "auto",
-    asciicast_knitr_svg = TRUE,
-    asciicast_at = "end",
-    asciicast_typing_speed = 0.05,
-    asciicast_padding = 20,
-    asciicast_window = FALSE,
-    asciicast_omit_last_line = FALSE,
-    asciicast_cursor = FALSE,
-    asciicast_theme = "pkgdown",
-    width = 100,
-    asciicast_rows = "auto",
-    asciicast_cols = 100,
-    asciicast_end_wait = 0,
-    crayon.enabled = TRUE,
-    crayon.colors = 256
-  )
-}
-
-
 #' Initialize the asciicast knitr engine
 #'
 #' Call this function in your Rmd file to enable creating asciinema
@@ -49,9 +16,6 @@ asciicast_knitr_options <- function() {
 #'   R process. To restart this R process, call `init_knitr_engine()`
 #'   again.
 #' @param echo_input Whether to echo the input in the asciicast recording.
-#' @param options R options to set (via the `R.options` chunk option of
-#'   knitr), in the current R process that performs the recording.
-#'   See [asciicast_knitr_options()] for the defaults.
 #' @inheritParams asciicast_start_process
 #'
 #' @export
@@ -76,7 +40,7 @@ asciicast_knitr_options <- function() {
 init_knitr_engine <- function(echo = FALSE, same_process = TRUE,
                               timeout = 10, startup = NULL,
                               record_env = NULL, echo_input = TRUE,
-                              options = list()) {
+                              interactive = TRUE) {
 
   knitr::knit_engines$set("asciicast" = eng_asciicast)
   knitr::knit_engines$set("asciicastcpp11" = eng_asciicastcpp11)
@@ -87,21 +51,18 @@ init_knitr_engine <- function(echo = FALSE, same_process = TRUE,
     deps <- htmlwidgets::getDependency("asciinema_player", "asciicast")
     knitr::knit_meta_add(deps)
   }
-  if (knitr::is_html_output()) {
-
-  }
 
   default_echo <- knitr::opts_chunk$get("echo")
   attr(default_echo, "asciicast") <- echo
   knitr::opts_chunk$set(echo = default_echo)
 
-  roptsold <- knitr::opts_chunk$get("R.options")
-  roptsnew <- utils::modifyList(asciicast_knitr_options(), options)
-  ropts <- utils::modifyList(as.list(roptsold), as.list(roptsnew))
-  knitr::opts_chunk$set(R.options = ropts)
-
   if (same_process) {
-    proc <- asciicast_start_process(startup, timeout, record_env)
+    proc <- asciicast_start_process(
+      startup,
+      timeout,
+      record_env,
+      interactive = interactive
+    )
     oldproc <- .GlobalEnv$.knitr_asciicast_process
     if (!is.null(oldproc)) {
       try(close(oldproc$get_input_connection()), silent = TRUE)
@@ -114,11 +75,17 @@ init_knitr_engine <- function(echo = FALSE, same_process = TRUE,
   }
 }
 
+knitr_asciicast_options <- function(opts) {
+  opts[grepl("^asciicast_", names(opts))]
+}
+
 eng_asciicast <- function(options) {
   # If 'echo' was specified directly, then attr(options$echo, "asciicast")
   # will be NULL, and we use the directly specified value.
   # otherwise we use the asciicast default, which is FALSE
   options$echo <- attr(options$echo, "asciicast") %||% options$echo
+
+  withr::local_options(knitr_asciicast_options(options))
 
   if (!options$eval) {
     options$engine <- "r"
@@ -150,6 +117,7 @@ eng_asciicast <- function(options) {
 }
 
 eng_asciicastcpp11 <- function(options) {
+  withr::local_options(knitr_asciicast_options(options))
   if (options$eval) {
     # separate the headers
     ishead <- grepl("^#include", options$code)
@@ -197,6 +165,7 @@ eng_asciicastcpp11 <- function(options) {
 
 cache_eng_asciicast <- function(options) {
   options$echo <- attr(options$echo, "asciicast") %||% options$echo
+  withr::local_options(knitr_asciicast_options(options))
   cast <- readRDS(paste0(options$hash, ".cast"))
   eng_asciicast_print(cast, options)
 }
@@ -208,7 +177,7 @@ eng_asciicast_output_type <- function() {
   at <- getOption("asciicast_at")
   pkgdown <- identical(Sys.getenv("IN_PKGDOWN"), "true")
   if (pkgdown) {
-    if (is.null(at)) {
+    if (identical(at, "all")) {
       # animation
       "svg"
     } else {
@@ -217,18 +186,8 @@ eng_asciicast_output_type <- function() {
     }
 
   } else {
-    if (eng_asciicast_is_svg()) {
-      "svg"
-    } else {
-      "widget"
-    }
+    "svg"
   }
-}
-
-eng_asciicast_is_svg <- function() {
-  svg <- getOption("asciicast_knitr_svg", NULL) %||%
-    Sys.getenv("ASCIICAST_KNITR_SVG", "")
-  isTRUE(as.logical(svg))
 }
 
 eng_asciicast_print <- function(cast, options) {
@@ -240,27 +199,27 @@ eng_asciicast_print <- function(cast, options) {
   } else if (output == "widget") {
     knitr::knit_print(asciinema_player(cast), options = options)
   } else {
-    # html
-    tmp <- tempfile("ascii-", fileext = ".html")
-    on.exit(unlink(tmp), add = TRUE)
-    prefix <- knitr::opts_chunk$get("comment")
-    if (nchar(prefix) != 0) prefix <- paste0(prefix, " ")
-    write_html(cast, tmp, at = getOption("asciicast_at", "end"), prefix = prefix)
-    theme <- interpret_theme(NULL)
-    html <- c(
-      "<style type=\"text/css\">",
-      to_html_theme(theme),
-      "</style>",
-      readLines(tmp)
-    )
-    knitr::engine_output(
-      knitr::opts_chunk$merge(list(results = "asis", echo = FALSE)),
-      code = NULL,
-      out = html
-    )
+    asciicast_knitr_html(cast, options)
   }
 
   knitr::engine_output(options, options$code, '', extra)
+}
+
+eng_write_html <- function(cast, path) {
+  ocon <- file(path, open = "wb")
+
+  prefix <- knitr::opts_chunk$get("comment")
+  if (nchar(prefix) != 0) prefix <- paste0(prefix, " ")
+
+  details <- getOption("asciicast_html_details", FALSE)
+  write_html(
+    cast,
+    ocon,
+    at = getOption("asciicast_at", "end"),
+    prefix = prefix,
+    details = details
+  )
+  close(ocon)
 }
 
 ## Caching support. We cache both the cast and the SVG file as well,
@@ -268,8 +227,11 @@ eng_asciicast_print <- function(cast, options) {
 cache_asciicast <- function(cast, path) {
   message("(1) Saving ", paste0(path, ".cast"))
   saveRDS(cast, paste0(path, ".cast"))
-  if (eng_asciicast_output_type() == "avg") {
+  otype <- eng_asciicast_output_type()
+  if (otype == "svg") {
     write_svg(cast, paste0(path, ".svg"))
+  } else if (otype == "html") {
+    eng_write_html(cast, paste0(path, ".html"))
   }
 }
 
@@ -292,4 +254,27 @@ asciicast_knitr_svg <- function(cast, options) {
   if (!is.null(fig_proc)) filename <- fig_proc(filename)
 
   knitr::knit_hooks$get('plot')(filename, options)
+}
+
+asciicast_knitr_html <- function(cast, options) {
+  cached <- paste0(options$hash, ".html")
+  if (options$cache > 0 && file.exists(cached)) {
+    html <- readLines(cached)                                 # nocov
+  } else {
+    if (options$cache > 0) {
+      path <- cached
+    } else {
+      path <- tempfile("ascii-", fileext = ".html")
+      on.exit(unlink(path), add = TRUE)
+    }
+
+    eng_write_html(cast, path)
+    html <- readLines(path)
+  }
+
+  knitr::engine_output(
+    knitr::opts_chunk$merge(list(results = "asis", echo = FALSE)),
+    code = NULL,
+    out = html
+  )
 }

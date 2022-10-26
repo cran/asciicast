@@ -5,15 +5,13 @@ always_allow_html: true
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  cache = FALSE
+  cache = TRUE
 )
 asciicast::init_knitr_engine()
 ```
 
-```{r}
-.GlobalEnv$.knitr_asciicast_process$kill()
-```
+Simple SVG image at end
 
 ```{asciicast 1-letters}
-letters
+cat(cli::col_red("this is red"))
 ```
