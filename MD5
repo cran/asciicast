@@ -1,11 +1,11 @@
-b024cb467b94532559fe392efb754a20 *DESCRIPTION
+b928bc0eac61824744ada86173372ce2 *DESCRIPTION
 1b04d84d0f5a3d8b62912897b933f98b *LICENSE
-28e11b3d1d562a4218437d918748e3e2 *NAMESPACE
-744b69acac0b99289c9444118c5b0ab7 *NEWS.md
+03f2cd32d7c507830572ace3eb2fdc88 *NAMESPACE
+3158443a97d923fd354c72ba1428797a *NEWS.md
 c1dbb190ed90e0231c513371c733c9c7 *R/aaa-rstudio-detect.R
 210414147aa47ae87dfc6e0a078688d2 *R/asciicast.R
 46237d3856bc52e138c85d15f2e0fab2 *R/embed.R
-2bd82078d905bc2fbca6683632dc87c2 *R/errors.R
+125e493fe5682e24cb8d2b5ffacf9f30 *R/errors.R
 b16cec181dc61f69c7d4faad0d6a57d1 *R/frames.R
 00aaad57c88dd4152d59a77e73bbba57 *R/gif.R
 397328885223146eae773b24b7f161fe *R/html.R
@@ -19,6 +19,7 @@ a98e5d5780d6c21f312fcc9a7e2c0eb5 *R/parameters.R
 8f3a327525cd3d3ef4da86ccecf7d803 *R/record-output.R
 7e0ed93628c3b8a7a73ac40993ff4d35 *R/rstudio.R
 16f4c3fee6a6199a86b7f41f2670af65 *R/svg.R
+b0c0cef59ca0e374e0ce280942a328de *R/test.R
 303c719bca200556eb75bf1484588809 *R/utils.R
 36fe08c02a97a4a48c77c9fa65d048e7 *R/write-json.R
 8f74ac1e87922a3568419a4521569598 *README.md
@@ -58,6 +59,7 @@ f3ccc0a9c6131d5d185c83cfd62b7e9e *inst/page/page.js
 90b78f7b077c2112641f2e9d607f1c7c *man/asciicast_start_process.Rd
 595818296eafd287ea153065fbda1fca *man/asciinema_player.Rd
 0819a2ad6e13ecd4de6483388c9dd72b *man/default_theme.Rd
+f8dcdb52cb1de1e14a326f7c50d84624 *man/expect_snapshot_r_process.Rd
 da584d42363110cb755edf8f64340cd0 *man/figures/README-/unnamed-chunk-3.svg
 72d0d3216a16102b0075cd90df3cfad1 *man/figures/README-/unnamed-chunk-5.svg
 9fe15fdc1beb4daa628012bc760cb14c *man/figures/README-/unnamed-chunk-7.svg
@@ -82,8 +84,9 @@ bc4432b983972f3f0964777b618d24bc *src/client.c
 aff8a70a97f6e900f3d008339b28a755 *src/install.libs.R
 cb4ac081c7ec0dafac1ea76ed12470c9 *src/psignal.h
 a57cf9145701cd3eeb6f3167eef9c2a2 *src/r.c
-d934c9d1e797d450601b77948175f031 *src/rwin.c
+bd7e7ea13a2964ace04fe025b677987d *src/rwin.c
 9ac7c0c22283cb7828f335f46dd02592 *tests/testthat.R
+e91ae596f6f5d84a4439c81067900df6 *tests/testthat/_snaps/ascii/html/html-truecolor.html
 afe9ba2231b188f66bd2c7a5818c1b27 *tests/testthat/_snaps/asciicast.md
 6058fb1b223e9b9b19887d24565000af *tests/testthat/_snaps/darwin-aarch64/embed.md
 dc6bea82aa9bdbabb6c8cfe361e108d5 *tests/testthat/_snaps/darwin-x86_64/embed.md
@@ -97,7 +100,6 @@ ae2104f7ed81a3b6cf8f236812997b1e *tests/testthat/_snaps/html/html-hyperlink.html
 b00216d7c7ebc031b88cbf505f96db1f *tests/testthat/_snaps/html/html-no-markup.html
 d5b7971d15b137fdf4eaced6fba013e4 *tests/testthat/_snaps/html/html-prefix.html
 a09d5e85916594be68b0d379e3f1d337 *tests/testthat/_snaps/html/html-styles.html
-81d8a6a48b2ce2fc7d63968168c5d99a *tests/testthat/_snaps/html/html-truecolor.html
 c4fd6e981316952d6dc54b5880ae7128 *tests/testthat/_snaps/knitr/1-cpp11-mean.svg
 2e0734ba20487c63fed176e592308e31 *tests/testthat/_snaps/knitr/1-letters.svg
 f7bb70e665ac2b378d3481092ead62ce *tests/testthat/_snaps/knitr/3-echo.svg
@@ -116,7 +118,9 @@ dc6bea82aa9bdbabb6c8cfe361e108d5 *tests/testthat/_snaps/linux-x86_64/embed.md
 6e13f044c19594e2534c645d888901e7 *tests/testthat/_snaps/svg/hello.svg
 e9dfa46ce888cf10a35c537d96f06ba0 *tests/testthat/_snaps/svg/hello1.svg
 26612dd23b3b613efbadcbc3ca3c4deb *tests/testthat/_snaps/svg/hello2.svg
+f58790279abccb3a8e30641318ba1882 *tests/testthat/_snaps/test.md
 a4fb65c2d4b4ef21044cc9b60ecd8dc0 *tests/testthat/_snaps/unix/rstudio/out.html
+81d8a6a48b2ce2fc7d63968168c5d99a *tests/testthat/_snaps/utf8/html/html-truecolor.html
 c6e2393df345afca69a0f54f1396a299 *tests/testthat/_snaps/utils.md
 c795fb0d8d1ece894a96edc43b888ef9 *tests/testthat/_snaps/windows-x86_64/embed.md
 e3826673c2e035ebd21f6b56854b6ef9 *tests/testthat/fixtures/bad.json
@@ -135,7 +139,7 @@ cb5e6fb02e418622ac27523a8f391879 *tests/testthat/setup.R
 ba32a7af671cf62c3d4e3dc7b16b470f *tests/testthat/test-embed.R
 85b8a5534d60bddc61bfb91dfc20ddab *tests/testthat/test-frames.R
 004b2c230e6c2607394b34600908a03c *tests/testthat/test-gif.R
-ec43197141cb2ef24cdfcb549b49d438 *tests/testthat/test-html.R
+6508363893d6cb54acfc6861bdc4eb05 *tests/testthat/test-html.R
 46f5c49907d366da89e181479d3a1013 *tests/testthat/test-htmlwidget.R
 a38c450f50cbf632006cd3dcaa4e8fda *tests/testthat/test-install-phantomjs.R
 e3ed131bec7fe20b33d8dd3725c7d93c *tests/testthat/test-knitr.R
@@ -145,4 +149,5 @@ f0273331f48813a3c242a72df3bbe4aa *tests/testthat/test-record-output.R
 86d7073cc855614622c81f8a653910b7 *tests/testthat/test-rstudio.R
 f85de90c9a0f7a0088cd9b76e8d1b34b *tests/testthat/test-src-c.R
 87544ca4e52797f6c3b089c248a5d71c *tests/testthat/test-svg.R
+9fcb7f5448898f7b30012df850591958 *tests/testthat/test-test.R
 db531ffeaa17ced3f77165ac32e300cf *tests/testthat/test-utils.R
