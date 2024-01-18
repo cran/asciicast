@@ -18,7 +18,8 @@ write_svg(
   padding_x = NULL,
   padding_y = NULL,
   omit_last_line = NULL,
-  theme = NULL
+  theme = NULL,
+  show = NULL
 )
 }
 \arguments{
@@ -53,6 +54,9 @@ often just the prompt, and sometimes it is not worth showing.}
 
 \item{theme}{A named list to override the default theme
 (see \code{\link[=default_theme]{default_theme()}}).}
+
+\item{show}{Whether to show the SVG file on the screen, in the viewer
+pane in RStudio, or in the web browser.}
 }
 \description{
 Create animated SVG from an asciicast
@@ -62,7 +66,9 @@ Create animated SVG from an asciicast
 cast <- read_cast(system.file("examples", "hello.cast", package = "asciicast"))
 svg_file <- tempfile(fileext = ".svg")
 write_svg(cast, svg_file)
-\dontshow{unlink(svg_file, recursive = TRUE)}
+\dontshow{
+unlink(svg_file, recursive = TRUE)
+}
 \dontshow{\}) # examplesIf}
 }
 \seealso{

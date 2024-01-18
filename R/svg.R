@@ -1,4 +1,3 @@
-
 #' Create animated SVG from an asciicast
 #'
 #' @param cast `asciicast` object.
@@ -19,6 +18,8 @@
 #'   often just the prompt, and sometimes it is not worth showing.
 #' @param theme A named list to override the default theme
 #'   (see [default_theme()]).
+#' @param show Whether to show the SVG file on the screen, in the viewer
+#'   pane in RStudio, or in the web browser.
 #'
 #' @export
 #' @family SVG functions
@@ -27,13 +28,13 @@
 #' cast <- read_cast(system.file("examples", "hello.cast", package = "asciicast"))
 #' svg_file <- tempfile(fileext = ".svg")
 #' write_svg(cast, svg_file)
-#' \dontshow{unlink(svg_file, recursive = TRUE)}
-
+#' \dontshow{
+#' unlink(svg_file, recursive = TRUE)
+#' }
 write_svg <- function(cast, path, window = NULL, start_at = NULL, end_at = NULL,
                       at = NULL, cursor = NULL, rows = NULL, cols = NULL,
                       padding = NULL, padding_x = NULL, padding_y = NULL,
-                      omit_last_line = NULL, theme = NULL) {
-
+                      omit_last_line = NULL, theme = NULL, show = NULL) {
   ct <- load_svg_term()
 
   in_knitr <- isTRUE(getOption("knitr.in.progress"))
@@ -74,7 +75,8 @@ write_svg <- function(cast, path, window = NULL, start_at = NULL, end_at = NULL,
   options <- not_null(list(
     window = window, from = start_at, to = end_at, at = at, cursor = cursor,
     paddingX = padding_x, paddingY = padding_y, height = rows, width = cols,
-    theme = theme))
+    theme = theme
+  ))
 
   svg <- ct$call("svgterm.render", json, options)
   svg <- gsub(
@@ -84,6 +86,9 @@ write_svg <- function(cast, path, window = NULL, start_at = NULL, end_at = NULL,
     fixed = TRUE
   )
   cat(svg, file = path)
+
+  show <- show %||% is_rstudio()
+  if (show) play_svg(path)
 
   invisible()
 }
@@ -95,10 +100,11 @@ is_svg_supported <- function() {
 }
 
 check_svg_support <- function() {
-  if (! is_svg_supported()) {
-    stop("Writing SVG files needs a more recent Node library, see the ",
-         "documentation of the V8 package, e.g. ",
-         "https://github.com/jeroen/v8#readme")
+  if (!is_svg_supported()) {
+    throw(cli::format_error(c(
+      "Writing SVG files needs a more recent Node library.",
+      i = "See the documentation of the V8 package: {.url https://github.com/jeroen/v8#readme}."
+    )))
   }
 }
 
@@ -146,35 +152,38 @@ rename_theme <- function(theme) {
 #' svg_file <- tempfile(fileext = ".svg")
 #' mytheme <- modifyList(default_theme(), list(cursor = c(255, 0, 0)))
 #' write_svg(cast, svg_file, theme = mytheme)
-#' \dontshow{unlink(svg_file, recursive = TRUE)}
-
+#' \dontshow{
+#' unlink(svg_file, recursive = TRUE)
+#' }
 default_theme <- function() {
   list(
-    "black"         = c(40, 45, 53),
-    "red"           = c(232, 131, 136),
-    "green"         = c(168, 204, 140),
-    "yellow"        = c(219, 171, 121),
-    "blue"          = c(113, 190, 242),
-    "magenta"       = c(210, 144, 228),
-    "cyan"          = c(102, 194, 205),
-    "white"         = c(185, 191, 202),
-    "light_black"   = c(111, 119, 131),
-    "light_red"     = c(232, 131, 136),
-    "light_green"   = c(168, 204, 140),
-    "light_yellow"  = c(219, 171, 121),
-    "light_blue"    = c(115, 190, 243),
+    "black" = c(40, 45, 53),
+    "red" = c(232, 131, 136),
+    "green" = c(168, 204, 140),
+    "yellow" = c(219, 171, 121),
+    "blue" = c(113, 190, 242),
+    "magenta" = c(210, 144, 228),
+    "cyan" = c(102, 194, 205),
+    "white" = c(185, 191, 202),
+    "light_black" = c(111, 119, 131),
+    "light_red" = c(232, 131, 136),
+    "light_green" = c(168, 204, 140),
+    "light_yellow" = c(219, 171, 121),
+    "light_blue" = c(115, 190, 243),
     "light_magenta" = c(210, 144, 227),
-    "light_cyan"    = c(102, 194, 205),
-    "light_white"   = c(255, 255, 255),
-    "background"    = c(40, 45, 53),
-    "bold"          = c(185, 192, 203),
-    "cursor"        = c(111, 118, 131),
-    "text"          = c(185, 192, 203),
-    "font_size"     = 1.67,
-    "line_height"   = 1.3,
-    "font_family"   = paste(sep = ",",
-       "'Fira Code'", "Monaco", "Consolas", "Menlo",
-       "'Bitstream Vera Sans Mono'", "'Powerline Symbols'", "monospace")
+    "light_cyan" = c(102, 194, 205),
+    "light_white" = c(255, 255, 255),
+    "background" = c(40, 45, 53),
+    "bold" = c(185, 192, 203),
+    "cursor" = c(111, 118, 131),
+    "text" = c(185, 192, 203),
+    "font_size" = 1.67,
+    "line_height" = 1.3,
+    "font_family" = paste(
+      sep = ",",
+      "'Fira Code'", "Monaco", "Consolas", "Menlo",
+      "'Bitstream Vera Sans Mono'", "'Powerline Symbols'", "monospace"
+    )
   )
 }
 
@@ -201,7 +210,6 @@ themes <- list(
     bold          = c(grDevices::col2rgb("#121314")),
     text          = c(grDevices::col2rgb("#121314"))
   ),
-
   tango = list(
     black         = c(grDevices::col2rgb("#000000")),
     red           = c(grDevices::col2rgb("#cc0000")),
@@ -224,7 +232,6 @@ themes <- list(
     bold          = c(grDevices::col2rgb("#cccccc")),
     text          = c(grDevices::col2rgb("#cccccc"))
   ),
-
   "solarized-dark" = list(
     black         = c(grDevices::col2rgb("#073642")),
     red           = c(grDevices::col2rgb("#dc322f")),
@@ -247,7 +254,6 @@ themes <- list(
     bold          = c(grDevices::col2rgb("#839496")),
     text          = c(grDevices::col2rgb("#839496"))
   ),
-
   "solarized-light" = list(
     black         = c(grDevices::col2rgb("#073642")),
     red           = c(grDevices::col2rgb("#dc322f")),
@@ -270,7 +276,6 @@ themes <- list(
     bold          = c(grDevices::col2rgb("#657b83")),
     text          = c(grDevices::col2rgb("#657b83"))
   ),
-
   seti = list(
     black         = c(grDevices::col2rgb("#323232")),
     red           = c(grDevices::col2rgb("#c22832")),
@@ -293,7 +298,6 @@ themes <- list(
     bold          = c(grDevices::col2rgb("#cacecd")),
     text          = c(grDevices::col2rgb("#cacecd"))
   ),
-
   monokai = list(
     black         = c(grDevices::col2rgb("#272822")),
     red           = c(grDevices::col2rgb("#f92672")),
@@ -316,7 +320,6 @@ themes <- list(
     bold          = c(grDevices::col2rgb("#f8f8f2")),
     text          = c(grDevices::col2rgb("#f8f8f2"))
   ),
-
   "github-light" = list(
     black         = c(grDevices::col2rgb("#073642")),
     red           = c(grDevices::col2rgb("#dc322f")),
@@ -339,7 +342,6 @@ themes <- list(
     bold          = c(grDevices::col2rgb("#657b83")),
     text          = c(grDevices::col2rgb("#657b83"))
   ),
-
   "github-dark" = list(
     black         = c(grDevices::col2rgb("#272822")),
     red           = c(grDevices::col2rgb("#dc322f")),
@@ -362,7 +364,6 @@ themes <- list(
     bold          = c(grDevices::col2rgb("#c9d1d9")),
     text          = c(grDevices::col2rgb("#c9d1d9"))
   ),
-
   "pkgdown" = list(
     black         = c(grDevices::col2rgb("#073642")),
     red           = c(grDevices::col2rgb("#dc322f")),
@@ -385,7 +386,6 @@ themes <- list(
     bold          = c(grDevices::col2rgb("#172431")),
     text          = c(grDevices::col2rgb("#172431"))
   ),
-
   "readme" = list(
     black         = c(grDevices::col2rgb("#073642")),
     red           = c(grDevices::col2rgb("#dc322f")),
@@ -425,25 +425,53 @@ themes <- list(
 #' @examplesIf interactive()
 #' cast <- read_cast(system.file("examples", "hello.cast", package = "asciicast"))
 #' play(cast)
-
 play <- function(cast, ...) {
-  tmpsvg <- tempfile(fileext = ".svg")
+  tmpsvg <- tempfile("asciicast", fileext = ".svg")
+  write_svg(cast, path = tmpsvg, ...)
+  play_svg(tmpsvg)
+}
+
+play_svg <- function(path) {
+  if (startsWith(path, tempdir()) && endsWith(path, ".svg")) {
+    tmpsvg <- path
+  } else {
+    tmpsvg <- tempfile("asciicast", fileext = ".svg")
+    if (!file.copy(path, tmpsvg)) {
+      throw(cli::format_error(c(
+        "Cannot copy {.path {path}} to {.path {tmpsvg}}."
+      )))
+    }
+  }
   tmphtml <- tempfile(fileext = ".html")
 
-  write_svg(cast, path = tmpsvg, ...)
+  rs <- is_rstudio()
+  width <- if (rs) "100%" else ""
 
-  cat(sep = "", file = tmphtml,
-      "<html><body><img src=\"", basename(tmpsvg), "\"></body></html>")
+  cat(
+    sep = "",
+    file = tmphtml,
+    "<html><body><img width=\"", width, "\" src=\"",
+    basename(tmpsvg),
+    "\"></body></html>"
+  )
 
-  utils::browseURL(tmphtml)
+  if (rs) {
+    rstudioapi::viewer(tmphtml)
+  } else {
+    utils::browseURL(tmphtml)
+  }
+
   invisible(tmpsvg)
 }
 
 remove_last_line <- function(cast) {
   last <- utils::tail(which(
     grepl("\n", cast$output$data, fixed = TRUE) &
-    cast$output$type == "o"), 1)
-  if (!length(last)) return(cast)
+      cast$output$type == "o"
+  ), 1)
+  if (!length(last)) {
+    return(cast)
+  }
 
   cast$output$data[last] <- sub("\r?\n[^\n]*$", "", cast$output$data[last])
   toremove <- last < seq_len(nrow(cast$output)) & cast$output$type == "o"

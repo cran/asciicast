@@ -1,4 +1,3 @@
-
 load_svg_term <- function() {
   check_svg_support()
 
@@ -22,13 +21,14 @@ load_svg_term <- function() {
 #' @keywords internal
 
 load_frames <- function(cast, height = NA, width = NA) {
-
   # Start with this, because it is faster
   json <- paste(as_json(cast), collapse = "\n")
 
   ct <- load_svg_term()
   ldjs <- system.file("load-cast.js", package = "asciicast")
-  if (ldjs == "") stop("Internal error, cannot find 'load-cast.js'")
+  if (ldjs == "") {
+    throw(cli::format_error("Internal error, cannot find {.file load-cast.js}."))
+  }
   ct$source(ldjs)
 
   ct$assign("json", json)
